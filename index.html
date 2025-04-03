@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDF with Text Input</title>
+    <style>
+        body {
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+
+        #pdf-container {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+
+        #right-pane {
+            width: 200px;
+            background-color: #f0f0f0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .draggable-input {
+            background-color: white;
+            padding: 5px;
+            margin-bottom: 5px;
+            cursor: grab;
+            border: 1px solid #ccc;
+        }
+
+        .dropped-input {
+            position: absolute;
+            border: 1px solid blue;
+            padding: 5px;
+            background-color: lightblue;
+        }
+
+        #next-screen {
+            display: none;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #screenshot-preview {
+            max-width: 80%;
+            max-height: 80vh;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <div id="pdf-container">
+        <canvas id="pdf-canvas"></canvas>
+    </div>
+
+    <div id="right-pane">
+        <input type="text" class="draggable-input" value="Input 1" draggable="true">
+        <input type="text" class="draggable-input" value="Input 2" draggable="true">
+        <input type="text" class="draggable-input" value="Input 3" draggable="true">
+        <button id="save-button">Save & Next</button>
+    </div>
+
+    <div id="next-screen">
+        <h1>Screenshot Preview</h1>
+        <img id="screenshot-preview" src="" alt="Screenshot">
+        <button id="download-preview">Download Preview</button>
+    </div>
+
+    <script>
+        const pdfContainer = document.getElementById('pdf-container');
+        const pdfCanvas = document.getElementById('pdf-canvas');
+        const context = pdfCanvas.getContext('2d');
+        const rightPane = document.getElementById('right-pane');
+        const saveButton = document.getElementById('save-button');
+        const downloadPreviewButton = document.getElementById('download-preview');
+        const nextScreen = document.getElementById('next-screen');
+        const screenshotPreview = document.getElementById('screenshot-preview');
+
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.5;
+
+        const url = './sample.pdf'; // Replace with your PDF file URL
+
+        pdfjsLib.getDocument(url).promise.then(function (pdfDoc_) {
+            pdfDoc = pdfDoc_;
+            renderPage(pageNum);
+        });
+
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(function (page) {
+                const viewport = page.getViewport({ scale: scale });
+                pdfCanvas.height = viewport.height;
+                pdfCanvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport,
+                };
+                const renderTask = page.render(renderContext);
+
+                renderTask.promise.then(function () {
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+        }
+
+        rightPane.addEventListener('dragstart', function (e) {
+            if (e.target.classList.contains('draggable-input')) {
+                e.dataTransfer.setData('text/plain', e.target.value);
+                e.dataTransfer.setData('elementId', e.target.id);
+            }
+        });
+
+        pdfContainer.addEventListener('dragover', function (e) {
+            e.preventDefault();
+        });
+
+        pdfContainer.addEventListener('drop', function (e) {
+            e.preventDefault();
+            const data = e.dataTransfer.getData('text/plain');
+            const inputElement = document.createElement('div');
+            inputElement.classList.add('dropped-input');
+            inputElement.textContent = data;
+            inputElement.style.left = e.offsetX + 'px';
+            inputElement.style.top = e.offsetY + 'px';
+            pdfContainer.appendChild(inputElement);
+        });
+
+        saveButton.addEventListener('click', function () {
+            // Adjust the pdfContainer's height to capture the whole content.
+            pdfContainer.style.height = pdfCanvas.height + 'px';
+
+            html2canvas(pdfContainer, { scrollY: 0 }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                screenshotPreview.src = imgData;
+
+                pdfContainer.style.display = 'none';
+                rightPane.style.display = 'none';
+                nextScreen.style.display = 'block';
+
+                // Reset the container's height after capturing.
+                pdfContainer.style.height = '';
+            });
+        });
+
+        downloadPreviewButton.addEventListener('click', function () {
+            const imgData = screenshotPreview.src;
+            const link = document.createElement('a');
+            link.href = imgData;
+            link.download = 'pdf_preview.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Reset the application.
+            resetApplication();
+        });
+
+        function resetApplication() {
+            nextScreen.style.display = 'none';
+            pdfContainer.style.display = 'block';
+            rightPane.style.display = 'block';
+            screenshotPreview.src = '';
+            pdfContainer.querySelectorAll('.dropped-input').forEach(input => input.remove());//remove dropped inputs.
+        }
+    </script>
+</body>
+</html>
