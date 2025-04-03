@@ -67,6 +67,7 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -176,16 +177,19 @@
         });
 
         downloadPreviewButton.addEventListener('click', function () {
-            const imgData = screenshotPreview.src;
-            const link = document.createElement('a');
-            link.href = imgData;
-            link.download = 'pdf_preview.png';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+          const imgData = screenshotPreview.src;
+          const { jsPDF } = window.jspdf;
 
-            // Reset the application.
-            resetApplication();
+          const pdf = new jsPDF();
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          pdf.save('pdf_preview.pdf');
+
+          // Reset the application.
+          resetApplication();
         });
 
         function resetApplication() {
