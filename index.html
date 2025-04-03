@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>PDF with Text Input</title>
+    <title>PDF with Drag and Drop Text </title>
+    <link rel="icon" type="image/png" href="pdf.png">
     <style>
         body {
             display: flex;
@@ -15,7 +16,7 @@
             position: relative;
         }
 
-        #right-pane {
+        #right-panel {
             width: 200px;
             background-color: #f0f0f0;
             padding: 10px;
@@ -37,16 +38,31 @@
             padding: 5px;
             background-color: lightblue;
         }
+        .preview-button-container{
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
         #next-screen {
             display: none;
             padding: 20px;
             text-align: center;
+            width: 100%;
         }
 
         #screenshot-preview {
             max-width: 80%;
             max-height: 80vh;
+        }
+
+        #download-preview{
+            cursor: pointer;
+            align-self: self-start;
+            margin-top: 20px;
+        }
+        #save-button{
+            cursor: pointer;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
@@ -58,7 +74,7 @@
         <canvas id="pdf-canvas"></canvas>
     </div>
 
-    <div id="right-pane">
+    <div id="right-panel">
         <input type="text" class="draggable-input" value="Input 1" draggable="true">
         <input type="text" class="draggable-input" value="Input 2" draggable="true">
         <input type="text" class="draggable-input" value="Input 3" draggable="true">
@@ -66,16 +82,19 @@
     </div>
 
     <div id="next-screen">
-        <h1>Screenshot Preview</h1>
+        <h1>Preview</h1>
+        <div class="preview-button-container">
         <img id="screenshot-preview" src="" alt="Screenshot">
-        <button id="download-preview">Download Preview</button>
+        <button id="download-preview">Download and Reset</button>
+        </div>
+        
     </div>
 
     <script>
         const pdfContainer = document.getElementById('pdf-container');
         const pdfCanvas = document.getElementById('pdf-canvas');
         const context = pdfCanvas.getContext('2d');
-        const rightPane = document.getElementById('right-pane');
+        const rightPane = document.getElementById('right-panel');
         const saveButton = document.getElementById('save-button');
         const downloadPreviewButton = document.getElementById('download-preview');
         const nextScreen = document.getElementById('next-screen');
